@@ -1,5 +1,7 @@
 """httpx wrapper for SpareBank1 personal banking API."""
 
+import datetime
+
 import httpx
 
 BASE_URL = "https://api.sparebank1.no/personal/banking"
@@ -97,8 +99,13 @@ def get_transactions(
     data = r.json()
     txns = []
     for t in data.get("transactions", []):
+        ts = t.get("date")
+        if ts:
+            date_str = datetime.datetime.fromtimestamp(ts / 1000, tz=datetime.timezone.utc).strftime("%Y-%m-%d")
+        else:
+            date_str = ""
         txns.append({
-            "date": t.get("accountingDate", t.get("interestDate", ""))[:10],
+            "date": date_str,
             "description": t.get("description", "").strip(),
             "amount": t.get("amount", 0),
         })
