@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
+COPY pyproject.toml README.md ./
 COPY sb1/ ./sb1/
 
 RUN pip install --no-cache-dir "click>=8.1.0" "httpx>=0.27.0" "keyring>=25.0.0" "hatchling" \
