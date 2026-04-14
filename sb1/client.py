@@ -108,5 +108,6 @@ def get_transactions(
             "date": date_str,
             "description": t.get("description", "").strip(),
             "amount": t.get("amount", 0),
+            "remote_account": t.get("remoteAccountNumber", ""),
         })
     return txns

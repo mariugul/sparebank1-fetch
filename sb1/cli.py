@@ -123,14 +123,14 @@ def transactions(account_key, from_date, to_date, days, fmt, output):
         if fmt == "json":
             out.write(json.dumps(txns, indent=2, ensure_ascii=False) + "\n")
         elif fmt == "csv":
-            writer = csv.DictWriter(out, fieldnames=["date", "description", "amount"])
+            writer = csv.DictWriter(out, fieldnames=["date", "description", "amount", "remote_account"])
             writer.writeheader()
             writer.writerows(txns)
         else:
-            out.write(f"{'DATE':<12}  {'AMOUNT':>12}  DESCRIPTION\n")
-            out.write("-" * 80 + "\n")
+            out.write(f"{'DATE':<12}  {'AMOUNT':>12}  {'REMOTE ACCOUNT':<16}  DESCRIPTION\n")
+            out.write("-" * 100 + "\n")
             for t in txns:
-                out.write(f"{t['date']:<12}  {str(t['amount']):>12}  {t['description']}\n")
+                out.write(f"{t['date']:<12}  {str(t['amount']):>12}  {t.get('remote_account',''):<16}  {t['description']}\n")
     finally:
         if output:
             out.close()
