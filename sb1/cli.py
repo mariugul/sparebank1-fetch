@@ -43,9 +43,33 @@ def login(client_id, client_secret, save):
     auth.login(client_id, client_secret)
 
 
+@main.command("save-token")
+@click.option("--access-token", required=True, envvar="ACCESS_TOKEN", help="access_token from curl response")
+@click.option("--refresh-token", required=True, envvar="REFRESH_TOKEN", help="refresh_token from curl response")
+@click.option("--expires-in", default=600, help="expires_in from curl response (default: 600)")
+def save_token(access_token, refresh_token, expires_in):
+    """Save a token obtained manually (e.g. via curl) to ~/.sb1_token."""
+    auth.save_token(access_token, refresh_token, expires_in)
+    click.echo("✓ Token saved to ~/.sb1_token")
+
+
 @main.command()
+def refresh():
+    """Force a token refresh using the stored refresh_token."""
+    client_id = os.environ.get("SB1_CLIENT_ID", "")
+    if not client_id:
+        raise click.ClickException("SB1_CLIENT_ID not set. Add it to ~/.sb1_env or export it.")
+    token = auth._load_token()
+    if not token or not token.get("refresh_token"):
+        raise click.ClickException("No refresh token found. Run 'sb1 save-token' or 'sb1 login' first.")
+    client_secret = os.environ.get("SB1_CLIENT_SECRET") or None
+    new_token = auth._refresh(token, client_id, client_secret)
+    click.echo(f"✓ Token refreshed, expires in {new_token.get('expires_in', '?')}s")
+
+
+@main.command("accounts")
 @click.option("--format", "fmt", type=click.Choice(["table", "json"]), default="table", help="Output format")
-def accounts(fmt):
+def accounts_cmd(fmt):
     """List all SpareBank1 accounts."""
     token = auth.get_access_token()
     accs = client.get_accounts(token)
@@ -58,7 +82,7 @@ def accounts(fmt):
             click.echo(f"{a['key']:<36}  {a['name']:<30}  {a['accountNumber']:<20}  {str(a['balance']):>12}  {a['currency']}")
 
 
-@main.command()
+@main.command("transactions")
 @click.option("--account", "account_key", required=True, envvar="SB1_ACCOUNT_KEY", help="Account key (from 'sb1 accounts')")
 @click.option("--from", "from_date", default=None, help="Start date YYYY-MM-DD (default: 30 days ago)")
 @click.option("--to", "to_date", default=None, help="End date YYYY-MM-DD (default: today)")

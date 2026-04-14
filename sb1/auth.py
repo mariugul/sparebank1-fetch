@@ -29,16 +29,15 @@ def _save_token(token: dict) -> None:
     TOKEN_FILE.chmod(0o600)
 
 
-def _refresh(token: dict, client_id: str, client_secret: str) -> dict:
-    r = httpx.post(
-        TOKEN_URL,
-        data={
-            "grant_type": "refresh_token",
-            "refresh_token": token["refresh_token"],
-            "client_id": client_id,
-            "client_secret": client_secret,
-        },
-    )
+def _refresh(token: dict, client_id: str, client_secret: str | None = None) -> dict:
+    data: dict = {
+        "grant_type": "refresh_token",
+        "refresh_token": token["refresh_token"],
+        "client_id": client_id,
+    }
+    if client_secret:
+        data["client_secret"] = client_secret
+    r = httpx.post(TOKEN_URL, data=data)
     r.raise_for_status()
     new_token = r.json()
     new_token["expires_at"] = time.time() + new_token.get("expires_in", 3600) - 60
@@ -46,7 +45,7 @@ def _refresh(token: dict, client_id: str, client_secret: str) -> dict:
     return new_token
 
 
-def _do_auth_flow(client_id: str, client_secret: str) -> dict:
+def _do_auth_flow(client_id: str, client_secret: str | None = None) -> dict:
     """Run BankID OAuth2 authorization code flow with local redirect server."""
     state = secrets.token_urlsafe(16)
     auth_params = {
@@ -99,16 +98,15 @@ def _do_auth_flow(client_id: str, client_secret: str) -> dict:
     if code_holder.get("state") != state:
         raise RuntimeError("State mismatch — possible CSRF.")
 
-    r = httpx.post(
-        TOKEN_URL,
-        data={
-            "grant_type": "authorization_code",
-            "code": code_holder["code"],
-            "redirect_uri": REDIRECT_URI,
-            "client_id": client_id,
-            "client_secret": client_secret,
-        },
-    )
+    data: dict = {
+        "grant_type": "authorization_code",
+        "code": code_holder["code"],
+        "redirect_uri": REDIRECT_URI,
+        "client_id": client_id,
+    }
+    if client_secret:
+        data["client_secret"] = client_secret
+    r = httpx.post(TOKEN_URL, data=data)
     r.raise_for_status()
     token = r.json()
     token["expires_at"] = time.time() + token.get("expires_in", 3600) - 60
@@ -116,10 +114,22 @@ def _do_auth_flow(client_id: str, client_secret: str) -> dict:
     return token
 
 
+def save_token(access_token: str, refresh_token: str, expires_in: int = 600) -> None:
+    """Manually save a token (e.g. obtained via curl) to ~/.sb1_token."""
+    token = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "expires_in": expires_in,
+        "expires_at": time.time() + expires_in - 60,
+        "token_type": "Bearer",
+    }
+    _save_token(token)
+
+
 def get_access_token() -> str:
     """Return a valid access token, refreshing or re-authing as needed."""
     client_id = os.environ.get("SB1_CLIENT_ID", "")
-    client_secret = os.environ.get("SB1_CLIENT_SECRET", "")
+    client_secret = os.environ.get("SB1_CLIENT_SECRET") or None
     if not client_id:
         raise RuntimeError("SB1_CLIENT_ID not set. Add it to ~/.sb1_env or export it.")
 
@@ -138,11 +148,12 @@ def get_access_token() -> str:
     return token["access_token"]
 
 
-def login(client_id: str, client_secret: str) -> None:
+def login(client_id: str, client_secret: str | None = None) -> None:
     """Force a fresh BankID login."""
     if TOKEN_FILE.exists():
         TOKEN_FILE.unlink()
     os.environ["SB1_CLIENT_ID"] = client_id
-    os.environ["SB1_CLIENT_SECRET"] = client_secret
+    if client_secret:
+        os.environ["SB1_CLIENT_SECRET"] = client_secret
     _do_auth_flow(client_id, client_secret)
     print("✓ Authenticated and token saved to ~/.sb1_token")
