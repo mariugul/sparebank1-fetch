@@ -43,6 +43,14 @@ def login(client_id, client_secret, save):
     auth.login(client_id, client_secret)
 
 
+@main.command("hello")
+def hello():
+    """Test authentication with a Hello World request."""
+    token = auth.get_access_token()
+    msg = client.hello_world(token)
+    click.echo(msg)
+
+
 @main.command("save-token")
 @click.option("--access-token", required=True, envvar="ACCESS_TOKEN", help="access_token from curl response")
 @click.option("--refresh-token", required=True, envvar="REFRESH_TOKEN", help="refresh_token from curl response")

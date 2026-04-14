@@ -13,6 +13,16 @@ def _headers(token: str) -> dict:
     }
 
 
+def hello_world(token: str) -> str:
+    """Call the Hello World endpoint to verify authentication."""
+    r = httpx.get(
+        "https://api.sparebank1.no/common/helloworld",
+        headers=_headers(token),
+    )
+    r.raise_for_status()
+    return r.json().get("message", r.text)
+
+
 def get_accounts(token: str) -> list[dict]:
     """Return list of accounts with key, name, balance."""
     r = httpx.get(f"{BASE_URL}/accounts", headers=_headers(token))
