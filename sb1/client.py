@@ -58,15 +58,17 @@ def get_transactions(
         List of transaction dicts with date, description, amount
     """
     params = {
+        "accountKey": account_key,
         "fromDate": from_date,
         "toDate": to_date,
     }
     r = httpx.get(
-        f"{BASE_URL}/transactions/{account_key}",
+        f"{BASE_URL}/transactions",
         headers=_headers(token),
         params=params,
     )
-    r.raise_for_status()
+    if not r.is_success:
+        raise RuntimeError(f"Transactions request failed {r.status_code}: {r.text}")
     data = r.json()
     txns = []
     for t in data.get("transactions", []):
