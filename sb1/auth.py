@@ -38,7 +38,8 @@ def _refresh(token: dict, client_id: str, client_secret: str | None = None) -> d
     if client_secret:
         data["client_secret"] = client_secret
     r = httpx.post(TOKEN_URL, data=data)
-    r.raise_for_status()
+    if not r.is_success:
+        raise RuntimeError(f"Token refresh failed {r.status_code}: {r.text}")
     new_token = r.json()
     new_token["expires_at"] = time.time() + new_token.get("expires_in", 3600) - 60
     _save_token(new_token)
