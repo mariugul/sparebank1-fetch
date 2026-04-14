@@ -105,9 +105,13 @@ def get_transactions(
         else:
             date_str = ""
         txns.append({
+            "id": t.get("id", ""),
             "date": date_str,
             "description": t.get("description", "").strip(),
             "amount": t.get("amount", 0),
             "remote_account": t.get("remoteAccountNumber", ""),
+            "type_code": t.get("typeCode", ""),
+            "booking_status": t.get("bookingStatus", ""),
+            "account_name": t.get("accountName", ""),
         })
     return txns

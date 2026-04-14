@@ -123,14 +123,14 @@ def transactions(account_key, from_date, to_date, days, fmt, output):
         if fmt == "json":
             out.write(json.dumps(txns, indent=2, ensure_ascii=False) + "\n")
         elif fmt == "csv":
-            writer = csv.DictWriter(out, fieldnames=["date", "description", "amount", "remote_account"])
+            writer = csv.DictWriter(out, fieldnames=["id", "date", "description", "amount", "remote_account", "type_code", "booking_status", "account_name"])
             writer.writeheader()
             writer.writerows(txns)
         else:
-            out.write(f"{'DATE':<12}  {'AMOUNT':>12}  {'REMOTE ACCOUNT':<16}  DESCRIPTION\n")
-            out.write("-" * 100 + "\n")
+            out.write(f"{'DATE':<12}  {'AMOUNT':>12}  {'STATUS':<8}  {'TYPE':<8}  {'REMOTE ACCOUNT':<16}  {'ACCOUNT':<20}  DESCRIPTION\n")
+            out.write("-" * 120 + "\n")
             for t in txns:
-                out.write(f"{t['date']:<12}  {str(t['amount']):>12}  {t.get('remote_account',''):<16}  {t['description']}\n")
+                out.write(f"{t['date']:<12}  {str(t['amount']):>12}  {t.get('booking_status',''):<8}  {t.get('type_code',''):<8}  {t.get('remote_account',''):<16}  {t.get('account_name',''):<20}  {t['description']}\n")
     finally:
         if output:
             out.close()
