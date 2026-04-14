@@ -111,6 +111,10 @@ def transactions(account_key, from_date, to_date, days, fmt, output):
             to_date = str(today)
 
     token = auth.get_access_token()
+    try:
+        account_key = client.resolve_account_key(token, account_key)
+    except ValueError as e:
+        raise click.ClickException(str(e))
     txns = client.get_transactions(token, account_key, from_date, to_date)
 
     out = open(output, "w", encoding="utf-8", newline="") if output else sys.stdout

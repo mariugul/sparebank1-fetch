@@ -40,6 +40,31 @@ def get_accounts(token: str) -> list[dict]:
     return accounts
 
 
+def resolve_account_key(token: str, account: str) -> str:
+    """Resolve account name or partial name to an account key.
+
+    Tries in order:
+    1. Exact key match (passthrough)
+    2. Exact name match (case-insensitive)
+    3. Partial name match (case-insensitive)
+    """
+    accounts = get_accounts(token)
+    keys = {a["key"] for a in accounts}
+    if account in keys:
+        return account
+    lower = account.lower()
+    exact = [a for a in accounts if a["name"].lower() == lower]
+    if exact:
+        return exact[0]["key"]
+    partial = [a for a in accounts if lower in a["name"].lower()]
+    if len(partial) == 1:
+        return partial[0]["key"]
+    if len(partial) > 1:
+        names = ", ".join(a["name"] for a in partial)
+        raise ValueError(f"Ambiguous account name '{account}' matches: {names}")
+    raise ValueError(f"No account found matching '{account}'. Run 'sb1 accounts' to list all.")
+
+
 def get_transactions(
     token: str,
     account_key: str,
